@@ -15,7 +15,7 @@ type TodoProps = {
 };
 
 function Todo({ todo }: TodoProps) {
-  const { content, deadline, id, isDone, note, position } = todo;
+  const { content, deadline, isDone, note, position } = todo;
   const todos = useAppSelector((state) => state.TodoSliceName);
   const dispatch = useAppDispatch();
   const miliseconds = Date.now() + dayjs(deadline).diff(dayjs(), "millisecond");
@@ -28,11 +28,6 @@ function Todo({ todo }: TodoProps) {
       if (dayjs(deadline).diff(dayjs(), "h") <= 1) {
         !todo.isWarning && dispatch(updateTodo({ ...todo, isWarning: true }));
       }
-      // if (dayjs(deadline - 5000).diff(dayjs()) === val) {
-      //   todo.justCreatedOrEdited &&
-      //     dispatch(updateTodo({ ...todo, justCreatedOrEdited: false }));
-      // }
-      // console.log(val === dayjs().millisecond() + 5000);
     }
   };
 

@@ -20,7 +20,7 @@ import TextArea from "antd/es/input/TextArea";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { todoSchema } from "../../Services/Schemas/Todo.schema";
-import { range } from "../../Services/Utils/Utils";
+import { range, searchTodo } from "../../Services/Utils/Utils";
 import { useAppDispatch, useAppSelector } from "../../store";
 import {
   addTodo,
@@ -57,8 +57,8 @@ const TodoList = () => {
     dispatch(updateTodo(todo));
   };
 
-  const handleDeleteTodo = (index: string) => {
-    dispatch(deleteTodo(index));
+  const handleDeleteTodo = (deadline: number) => {
+    dispatch(deleteTodo(deadline));
     messageApi.open({
       type: "success",
       content: "Delete Todos Successfully",
@@ -99,23 +99,28 @@ const TodoList = () => {
         });
         return;
       }
+
       if (todo) {
         dispatch(
           updateTodo({
             ...todo,
             ...data,
-            justCreatedOrEdited: true,
           })
         );
         setEditedTodo(undefined);
       } else {
+        if (searchTodo(todos, data.deadline) !== -1) {
+          messageApi.open({
+            type: "error",
+            content: "Deadline đã tồn tại",
+          });
+          return;
+        }
         dispatch(
           addTodo({
             ...data,
-            id: new Date().toISOString(),
             isDone: false,
             isWarning: false,
-            justCreatedOrEdited: true,
           })
         );
       }
@@ -165,13 +170,6 @@ const TodoList = () => {
     }
   }, [editedTodo, setEditedTodo]);
 
-  // const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const selected_file = e.target.files?.[0] as File;
-  //   console.log(
-  //     (window.URL || window.webkitURL).createObjectURL(selected_file)
-  //   );
-  //   console.log(selected_file);
-  // };
   return (
     <div className="todos">
       {contextHolder}
@@ -392,7 +390,7 @@ const TodoList = () => {
               <Popconfirm
                 title="Delete the task"
                 description="Are you sure to delete this task?"
-                onConfirm={() => handleDeleteTodo(todo.id)}
+                onConfirm={() => handleDeleteTodo(todo.deadline)}
                 okText="Yes"
                 cancelText="No"
                 className="todo-item-action todo-item-action-delete"

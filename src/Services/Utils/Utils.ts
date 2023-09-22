@@ -8,6 +8,19 @@ export const range = (start: number, end: number) => {
   }
   return result;
 };
+export const searchTodo = function (todos: Todo[], deadline: number) {
+  let left = 0,
+    right = todos.length - 1;
+  while (left < right) {
+    let mid = left + Math.floor((right - left + 1) / 2);
+    if (deadline > todos[mid].deadline) {
+      right = mid - 1;
+    } else {
+      left = mid;
+    }
+  }
+  return todos[left].deadline == deadline ? left : -1;
+};
 
 export const addTodoByBinarySearch = (todos: Todo[], target: Todo) => {
   if (

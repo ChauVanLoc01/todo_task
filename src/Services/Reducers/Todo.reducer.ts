@@ -3,7 +3,7 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../../store";
 import { Todo } from "../Types/Todo.type";
 import { WorkingWithLocalStorage as ls } from "../Utils/LocalStorage";
-import { addTodoByBinarySearch } from "../Utils/Utils";
+import { addTodoByBinarySearch, searchTodo } from "../Utils/Utils";
 import dayjs from "dayjs";
 
 const initialState: Todo[] = ls.get("todo")
@@ -19,7 +19,7 @@ export const todoSlice = createSlice({
       ls.update("todo", JSON.stringify(state));
     },
     updateTodo: (state, action: PayloadAction<Todo>) => {
-      const index = [...state].findIndex((e) => e.id === action.payload.id);
+      const index = searchTodo(state, action.payload.deadline);
       if (state[index].deadline !== action.payload.deadline) {
         state.splice(index, 1);
         state = addTodoByBinarySearch(state, action.payload);
@@ -28,19 +28,15 @@ export const todoSlice = createSlice({
       }
       ls.update("todo", JSON.stringify(state));
     },
-    deleteTodo: (state, action: PayloadAction<string>) => {
-      const index = [...state].findIndex((e) => e.id === action.payload);
+    deleteTodo: (state, action: PayloadAction<number>) => {
+      const index = searchTodo(state, action.payload);
       state.splice(index, 1);
       ls.update("todo", JSON.stringify(state));
-    },
-    searchTodos: (state, action: PayloadAction<string>) => {
-      const search = action.payload.split(/\s+/);
     },
   },
 });
 
-export const { addTodo, deleteTodo, searchTodos, updateTodo } =
-  todoSlice.actions;
+export const { addTodo, deleteTodo, updateTodo } = todoSlice.actions;
 
 export const TodoSliceName = todoSlice.name;
 
