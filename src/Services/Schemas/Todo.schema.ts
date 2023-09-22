@@ -8,13 +8,13 @@ export const todoSchema = yup
       .trim()
       .required("Content là bắt buộc")
       .min(2, "Độ dài Content tối thiểu 2 kí tự")
-      .max(300, "Độ dài Content tối đa 300 kí tự"),
+      .max(200, "Độ dài Content tối đa 300 kí tự"),
     note: yup
       .string()
       .trim()
       .optional()
       .min(10, "Độ dài Note tối thiểu 10 kí tự")
-      .max(200, "Độ dài Note tối đa 200 kí tự"),
+      .max(100, "Độ dài Note tối đa 200 kí tự"),
     deadline: yup.number().required("Deadline là bắt buộc"),
     position: yup
       .string()

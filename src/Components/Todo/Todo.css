@@ -42,9 +42,8 @@
     margin-right: 0.3rem;
 }
 
-.todo-content>h4 {
-    width: 100%;
-    max-width: 100%;
+.todo-content {
+    word-break: break-all;
 }
 
 .todo-note-title {

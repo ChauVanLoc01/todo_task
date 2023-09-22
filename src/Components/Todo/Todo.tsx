@@ -87,7 +87,7 @@ function Todo({ todo }: TodoProps) {
           </div>
         </div>
         <div className="todo-content">
-          <h4 className=".abc">{content}</h4>
+          <h4>{content}</h4>
           <div
             className={classNames("todo-note", {
               "todo-note-hidden": !note,

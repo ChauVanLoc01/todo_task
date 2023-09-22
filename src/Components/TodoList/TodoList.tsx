@@ -178,7 +178,7 @@ const TodoList = () => {
       <div className="todos-header">
         <div className="todos-search">
           <Input
-            placeholder="Add a todo"
+            placeholder="Search a todo"
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             className="todos-input"
@@ -227,7 +227,7 @@ const TodoList = () => {
                   name="content"
                   control={control}
                   render={({ field }) => (
-                    <Input
+                    <TextArea
                       id="content"
                       placeholder="Entern your content"
                       className="todos-input todos-modal-input"
