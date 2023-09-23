@@ -15,21 +15,35 @@ type TodoProps = {
 };
 
 function Todo({ todo }: TodoProps) {
-  const { content, deadline, isDone, note, position } = todo;
-  const todos = useAppSelector((state) => state.TodoSliceName);
+  const { content, deadline, isDone, note, position, isWarning } = todo;
   const dispatch = useAppDispatch();
   const miliseconds = Date.now() + dayjs(deadline).diff(dayjs(), "millisecond");
   const onFinish: CountdownProps["onFinish"] = () => {
-    dispatch(updateTodo({ ...todo, isDone: true, isWarning: false }));
+    isWarning &&
+      dispatch(updateTodo({ ...todo, isDone: true, isWarning: false }));
   };
 
-  const onChange: CountdownProps["onChange"] = (val) => {
-    if (typeof val === "number") {
-      if (dayjs(deadline).diff(dayjs(), "h") <= 1) {
-        !todo.isWarning && dispatch(updateTodo({ ...todo, isWarning: true }));
-      }
-    }
-  };
+  // const onChange: CountdownProps["onChange"] = (val) => {
+  //   if (typeof val === "number") {
+  //     if (dayjs(deadline).diff(dayjs(), "h") <= 1 && !todo.isWarning) {
+  //       dispatch(updateTodo({ ...todo, isWarning: true }));
+  //     }
+  //   }
+  // };
+
+  useEffect(() => {
+    const timeout =
+      deadline &&
+      setTimeout(() => {
+        dispatch(
+          updateTodo({
+            ...todo,
+            justCreated: false,
+          })
+        );
+      }, 4000);
+    return () => clearInterval(timeout);
+  }, []);
 
   return (
     <div className="todo">
@@ -43,7 +57,7 @@ function Todo({ todo }: TodoProps) {
           title="TTL:"
           onFinish={onFinish}
           valueStyle={{ color: "#ff4d4f" }}
-          onChange={onChange}
+          // onChange={onChange}
           format="Dd HH:mm:ss"
         />
       </div>

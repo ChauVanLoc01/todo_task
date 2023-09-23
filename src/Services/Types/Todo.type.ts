@@ -7,4 +7,5 @@ export type Todo = {
   file?: string;
   isDone: boolean;
   isWarning: boolean;
+  justCreated: boolean;
 };

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   List,
   Input,
@@ -56,8 +56,10 @@ const TodoList = () => {
   } = useForm<Pick<TodoType, "content" | "deadline" | "note" | "position">>({
     resolver: yupResolver(todoSchema),
   });
+  // dùng để hiển thị message ui
   const [messageApi, contextHolder] = message.useMessage();
 
+  // Xóa toàn bộ data trong form
   const handleResetAllValueOfForm = () => {
     reset({
       content: "",
@@ -78,6 +80,7 @@ const TodoList = () => {
       content: "Delete Todos Successfully",
     });
   };
+
   const filteredAndSortedTodos = () => {
     let result: TodoType[] = data;
     if (sortOrder === "ascend") {
@@ -116,11 +119,15 @@ const TodoList = () => {
       return;
     }
 
+    const isWarning =
+      dayjs(data.deadline).diff(dayjs(), "h") <= 1 ? true : false;
+
     if (editedTodo) {
       dispatch(
         updateTodo({
           ...editedTodo,
           ...data,
+          isWarning,
         })
       );
       setEditedTodo(undefined);
@@ -136,8 +143,9 @@ const TodoList = () => {
         addTodo({
           ...data,
           isDone: false,
-          isWarning: false,
+          isWarning,
           id: new Date().toISOString(),
+          justCreated: true,
         })
       );
     }
@@ -186,10 +194,12 @@ const TodoList = () => {
     filteredAndSortedTodos();
   }, [sortOrder, selectedFilter, data]);
 
+  // Sử dụng cho trường hợp khi người dùng clear từ khóa tìm kiếm thì sẽ tự động refresh lại todos
   useEffect(() => {
     !searchValue && filteredAndSortedTodos();
   }, [searchValue]);
 
+  // Chỉnh sửa todo
   useEffect(() => {
     if (editedTodo) {
       reset({
@@ -380,9 +390,10 @@ const TodoList = () => {
         renderItem={(todo) => (
           <List.Item
             className={classNames("todo-item", {
-              "todo-item-warning": todo.isWarning && !todo.isDone,
               "todo-item-done": todo.isDone,
-              // "todo-item-just-created": todo.justCreatedOrEdited,
+              "todo-item-just-created todo-animate-pulse": todo.justCreated,
+              "todo-item-warning todo-animate-pulse":
+                todo.isWarning && !todo.isDone,
             })}
             actions={[
               <div
