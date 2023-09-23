@@ -1,4 +1,5 @@
 export type Todo = {
+  id: string;
   content: string;
   note?: string;
   deadline: number;

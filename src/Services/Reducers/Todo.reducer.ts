@@ -3,11 +3,11 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "../../store";
 import { Todo } from "../Types/Todo.type";
 import { WorkingWithLocalStorage as ls } from "../Utils/LocalStorage";
-import { addTodoByBinarySearch, searchTodo } from "../Utils/Utils";
+import { addTodoByBinarySearch } from "../Utils/Utils";
 import dayjs from "dayjs";
 
-const initialState: Todo[] = ls.get("todo")
-  ? JSON.parse(ls.get("todo") as string)
+const initialState: Todo[] = ls.get("todos")
+  ? JSON.parse(ls.get("todos") as string)
   : [];
 
 export const todoSlice = createSlice({
@@ -16,22 +16,26 @@ export const todoSlice = createSlice({
   reducers: {
     addTodo: (state, action: PayloadAction<Todo>) => {
       state = addTodoByBinarySearch(state, action.payload);
-      ls.update("todo", JSON.stringify(state));
+      ls.update("todos", JSON.stringify(state));
     },
     updateTodo: (state, action: PayloadAction<Todo>) => {
-      const index = searchTodo(state, action.payload.deadline);
-      if (state[index].deadline !== action.payload.deadline) {
-        state.splice(index, 1);
-        state = addTodoByBinarySearch(state, action.payload);
-      } else {
-        state[index] = action.payload;
+      const input = action.payload;
+      const index = state.findIndex((todo) => todo.id === input.id);
+      if (index === -1) {
+        return;
       }
-      ls.update("todo", JSON.stringify(state));
+      if (state[index].deadline !== input.deadline) {
+        state.splice(index, 1);
+        state = addTodoByBinarySearch(state, input);
+      } else {
+        state[index] = input;
+      }
+      ls.update("todos", JSON.stringify(state));
     },
-    deleteTodo: (state, action: PayloadAction<number>) => {
-      const index = searchTodo(state, action.payload);
+    deleteTodo: (state, action: PayloadAction<string>) => {
+      const index = state.findIndex((todo) => todo.id === action.payload);
       state.splice(index, 1);
-      ls.update("todo", JSON.stringify(state));
+      ls.update("todos", JSON.stringify(state));
     },
   },
 });

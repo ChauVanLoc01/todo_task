@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   List,
   Input,
@@ -20,7 +20,11 @@ import TextArea from "antd/es/input/TextArea";
 import { useForm, Controller } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { todoSchema } from "../../Services/Schemas/Todo.schema";
-import { range, searchTodo } from "../../Services/Utils/Utils";
+import {
+  convertVnToEng,
+  findDeadline,
+  range,
+} from "../../Services/Utils/Utils";
 import { useAppDispatch, useAppSelector } from "../../store";
 import {
   addTodo,
@@ -32,8 +36,9 @@ import classNames from "classnames";
 const { Option } = Select;
 
 const TodoList = () => {
-  const todos = useAppSelector((state) => state.TodoSliceName);
+  const data = useAppSelector((state) => state.TodoSliceName);
   const dispatch = useAppDispatch();
+  const [todos, setTodos] = useState<TodoType[]>(data);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchValue, setSearchValue] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<number>(dayjs().date());
@@ -53,24 +58,30 @@ const TodoList = () => {
   });
   const [messageApi, contextHolder] = message.useMessage();
 
-  const handleMarkDoneOrUnDoneTodo = (todo: TodoType) => {
+  const handleResetAllValueOfForm = () => {
+    reset({
+      content: "",
+      note: undefined,
+      position: undefined,
+      deadline: undefined,
+    });
+  };
+
+  const handleMarkDoneOrUnDoneTodo = (todo: TodoType) => () => {
     dispatch(updateTodo(todo));
   };
 
-  const handleDeleteTodo = (deadline: number) => {
-    dispatch(deleteTodo(deadline));
+  const handleDeleteTodo = (id: string) => {
+    dispatch(deleteTodo(id));
     messageApi.open({
       type: "success",
       content: "Delete Todos Successfully",
     });
   };
-  const filteredAndSortedTodos = useMemo(() => {
-    var result: TodoType[] = [];
-    if (sortOrder === "descend") {
-      result = todos;
-    }
+  const filteredAndSortedTodos = () => {
+    let result: TodoType[] = data;
     if (sortOrder === "ascend") {
-      result = [...todos].reverse();
+      result = [...result].reverse();
     }
     if (selectedFilter === "done") {
       result = result.filter((e) => e.isDone);
@@ -78,59 +89,77 @@ const TodoList = () => {
     if (selectedFilter === "undone") {
       result = result.filter((e) => !e.isDone);
     }
+    setTodos(result);
+  };
+
+  const handleSearchTodo = () => {
     if (searchValue) {
       const words = searchValue.split(/\s+/);
-      result = result.filter((e) =>
-        words.some(
-          (w) => e.content.toLowerCase().indexOf(w.toLocaleLowerCase()) > -1
+      setTodos((todos) =>
+        todos.filter((e) =>
+          words.some(
+            (w) => convertVnToEng(e.content).indexOf(convertVnToEng(w)) > -1
+          )
         )
       );
     }
-    return result;
-  }, [sortOrder, selectedFilter, todos, searchValue]);
+  };
 
   // Handle Modal
-  const onSubmit =
-    (todo?: TodoType) =>
-    (data: Pick<TodoType, "content" | "deadline" | "note" | "position">) => {
-      if (dayjs(data.deadline).diff(dayjs()) < 0) {
-        setError("deadline", {
-          message: "Deadline không hợp lệ",
+  const onSubmit = (
+    data: Pick<TodoType, "content" | "deadline" | "note" | "position">
+  ) => {
+    if (dayjs(data.deadline).diff(dayjs()) < 0) {
+      setError("deadline", {
+        message: "Deadline không hợp lệ",
+      });
+      return;
+    }
+
+    if (editedTodo) {
+      dispatch(
+        updateTodo({
+          ...editedTodo,
+          ...data,
+        })
+      );
+      setEditedTodo(undefined);
+    } else {
+      if (findDeadline(todos, data.deadline) > -1) {
+        messageApi.open({
+          type: "error",
+          content: "Deadline đã tồn tại",
         });
         return;
       }
+      dispatch(
+        addTodo({
+          ...data,
+          isDone: false,
+          isWarning: false,
+          id: new Date().toISOString(),
+        })
+      );
+    }
+    setIsModalOpen(false);
+    messageApi.open({
+      type: "success",
+      content: `${editedTodo ? "Edit" : "Add"} Todos Successfully`,
+    });
+  };
 
-      if (todo) {
-        dispatch(
-          updateTodo({
-            ...todo,
-            ...data,
-          })
-        );
-        setEditedTodo(undefined);
-      } else {
-        if (searchTodo(todos, data.deadline) !== -1) {
-          messageApi.open({
-            type: "error",
-            content: "Deadline đã tồn tại",
-          });
-          return;
-        }
-        dispatch(
-          addTodo({
-            ...data,
-            isDone: false,
-            isWarning: false,
-          })
-        );
-      }
-      reset();
-      setIsModalOpen(false);
-      messageApi.open({
-        type: "success",
-        content: `${editedTodo ? "Edit" : "Add"} Todos Successfully`,
+  const handleCancelModal = () => {
+    if (editedTodo) {
+      reset({
+        content: "",
+        deadline: undefined,
+        note: undefined,
+        position: undefined,
       });
-    };
+      setEditedTodo(undefined);
+    }
+    setIsModalOpen(false);
+  };
 
   // Handle Date Picker
   const disabledDate: RangePickerProps["disabledDate"] = (current) => {
@@ -154,6 +183,14 @@ const TodoList = () => {
   });
 
   useEffect(() => {
+    filteredAndSortedTodos();
+  }, [sortOrder, selectedFilter, data]);
+
+  useEffect(() => {
+    !searchValue && filteredAndSortedTodos();
+  }, [searchValue]);
+
+  useEffect(() => {
     if (editedTodo) {
       reset({
         ...editedTodo,
@@ -161,14 +198,9 @@ const TodoList = () => {
       });
       setIsModalOpen(true);
     } else {
-      reset({
-        content: "",
-        note: undefined,
-        position: undefined,
-        deadline: undefined,
-      });
+      handleResetAllValueOfForm();
     }
-  }, [editedTodo, setEditedTodo]);
+  }, [editedTodo, data]);
 
   return (
     <div className="todos">
@@ -181,7 +213,11 @@ const TodoList = () => {
             onChange={(e) => setSearchValue(e.target.value)}
             className="todos-input"
           />
-          <Button className="todos-button" type="primary">
+          <Button
+            className="todos-button"
+            onClick={handleSearchTodo}
+            type="primary"
+          >
             Search
           </Button>
         </div>
@@ -196,12 +232,8 @@ const TodoList = () => {
             title="Add Todo"
             open={isModalOpen}
             okText={editedTodo ? "Edit" : "Add"}
-            onCancel={() => {
-              reset();
-              setIsModalOpen(false);
-              setEditedTodo(undefined);
-            }}
-            onOk={handleSubmit(onSubmit(editedTodo))}
+            onCancel={handleCancelModal}
+            onOk={handleSubmit(onSubmit)}
             okButtonProps={{
               htmlType: "submit",
             }}
@@ -282,7 +314,6 @@ const TodoList = () => {
                   )}
                 />
               </div>
-
               <div className="todos-modal todos-modal-input">
                 <label
                   className="todos-modal-title todo-modal-require"
@@ -302,7 +333,7 @@ const TodoList = () => {
                       showNow={true}
                       className="todos-modal-input"
                       id="date"
-                      value={field.value ? dayjs(field.value) : dayjs()}
+                      value={dayjs(field.value)}
                       ref={field.ref}
                       name={field.name}
                       onSelect={(date) => setSelectedDate(dayjs(date).date())}
@@ -345,7 +376,7 @@ const TodoList = () => {
       </div>
       <List
         className="todos-items"
-        dataSource={filteredAndSortedTodos}
+        dataSource={todos}
         renderItem={(todo) => (
           <List.Item
             className={classNames("todo-item", {
@@ -361,9 +392,7 @@ const TodoList = () => {
                 EDIT
               </div>,
               <div
-                onClick={() =>
-                  handleMarkDoneOrUnDoneTodo({ ...todo, isDone: true })
-                }
+                onClick={handleMarkDoneOrUnDoneTodo({ ...todo, isDone: true })}
                 className={classNames(
                   "todo-item-action todo-item-action-finish",
                   {
@@ -374,9 +403,7 @@ const TodoList = () => {
                 DONE
               </div>,
               <div
-                onClick={() =>
-                  handleMarkDoneOrUnDoneTodo({ ...todo, isDone: false })
-                }
+                onClick={handleMarkDoneOrUnDoneTodo({ ...todo, isDone: false })}
                 className={classNames(
                   "todo-item-action todo-item-action-finish",
                   {
@@ -390,7 +417,7 @@ const TodoList = () => {
               <Popconfirm
                 title="Delete the task"
                 description="Are you sure to delete this task?"
-                onConfirm={() => handleDeleteTodo(todo.deadline)}
+                onConfirm={() => handleDeleteTodo(todo.id)}
                 okText="Yes"
                 cancelText="No"
                 className="todo-item-action todo-item-action-delete"

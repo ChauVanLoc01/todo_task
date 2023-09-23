@@ -1,4 +1,4 @@
-type Key = "todo";
+type Key = "todos";
 
 export const WorkingWithLocalStorage = {
   set(key: Key, value: string) {
