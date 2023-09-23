@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import "./Todo.css";
-import { CountdownProps, Statistic } from "antd";
+import { Button, CountdownProps, Modal, Statistic } from "antd";
 import dayjs from "dayjs";
 import { dayOfWeek } from "../../Services/Utils/Utils";
 import classNames from "classnames";
@@ -15,33 +15,34 @@ type TodoProps = {
 };
 
 function Todo({ todo }: TodoProps) {
-  const { content, deadline, isDone, note, position, isWarning } = todo;
+  const {
+    content,
+    deadline,
+    isDone,
+    note,
+    position,
+    isWarning,
+    justCreated,
+    fileName,
+    fileUrl,
+  } = todo;
   const dispatch = useAppDispatch();
   const miliseconds = Date.now() + dayjs(deadline).diff(dayjs(), "millisecond");
   const onFinish: CountdownProps["onFinish"] = () => {
     isWarning &&
       dispatch(updateTodo({ ...todo, isDone: true, isWarning: false }));
   };
-
-  // const onChange: CountdownProps["onChange"] = (val) => {
-  //   if (typeof val === "number") {
-  //     if (dayjs(deadline).diff(dayjs(), "h") <= 1 && !todo.isWarning) {
-  //       dispatch(updateTodo({ ...todo, isWarning: true }));
-  //     }
-  //   }
-  // };
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
-    const timeout =
-      deadline &&
-      setTimeout(() => {
-        dispatch(
-          updateTodo({
-            ...todo,
-            justCreated: false,
-          })
-        );
-      }, 4000);
+    var timeout = setTimeout(() => {
+      dispatch(
+        updateTodo({
+          ...todo,
+          justCreated: false,
+        })
+      );
+    }, 4000);
     return () => clearInterval(timeout);
   }, []);
 
@@ -57,7 +58,6 @@ function Todo({ todo }: TodoProps) {
           title="TTL:"
           onFinish={onFinish}
           valueStyle={{ color: "#ff4d4f" }}
-          // onChange={onChange}
           format="Dd HH:mm:ss"
         />
       </div>
@@ -105,6 +105,35 @@ function Todo({ todo }: TodoProps) {
             <span className="todo-note-title">*Note: </span>
             <span className="todo-note-content">{note}</span>
           </div>
+          <Button
+            className="todo-file"
+            style={{
+              maxWidth: "12rem",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+            type="link"
+            onClick={() => setIsModalOpen(true)}
+          >
+            {fileName}
+          </Button>
+          <Modal
+            title="Your file"
+            open={isModalOpen}
+            onOk={() => setIsModalOpen(false)}
+            onCancel={() => setIsModalOpen(false)}
+            bodyStyle={{
+              textAlign: "center",
+            }}
+            footer={(_, { OkBtn }) => (
+              <>
+                <OkBtn />
+              </>
+            )}
+          >
+            <img src={fileUrl} alt="Image" />
+          </Modal>
         </div>
       </div>
     </div>

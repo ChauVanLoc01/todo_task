@@ -4,7 +4,8 @@ export type Todo = {
   note?: string;
   deadline: number;
   position?: string;
-  file?: string;
+  fileName?: string;
+  fileUrl?: string;
   isDone: boolean;
   isWarning: boolean;
   justCreated: boolean;

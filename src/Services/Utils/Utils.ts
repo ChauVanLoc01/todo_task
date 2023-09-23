@@ -120,3 +120,12 @@ export const convertVnToEng = (str: string, toUpperCase?: false) => {
 
   return toUpperCase ? str.toUpperCase() : str;
 };
+
+export function generateUniqueString() {
+  const uniqueString = Date.now().toString(36); // Sử dụng thời gian hiện tại dưới dạng chuỗi
+
+  // Thêm một số ngẫu nhiên để đảm bảo tính duy nhất
+  const randomPart = Math.random().toString(36).substr(2, 5);
+
+  return uniqueString + randomPart;
+}

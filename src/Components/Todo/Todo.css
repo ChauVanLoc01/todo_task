@@ -46,6 +46,12 @@
     word-break: break-all;
 }
 
+/* .todo-file {
+    font-size: 1rem;
+    width: 15rem;
+    max-width: 10rem !important;
+} */
+
 .todo-note-title {
     color: #ff4d4f;
 }

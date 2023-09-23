@@ -8,7 +8,9 @@ import {
   DatePicker,
   message,
   Popconfirm,
+  Upload,
 } from "antd";
+import { UploadOutlined } from "@ant-design/icons";
 import "./TodoList.css";
 import { Todo as TodoType } from "../../Services/Types/Todo.type";
 import { Order } from "../../Services/Types/Order.type";
@@ -23,6 +25,7 @@ import { todoSchema } from "../../Services/Schemas/Todo.schema";
 import {
   convertVnToEng,
   findDeadline,
+  generateUniqueString,
   range,
 } from "../../Services/Utils/Utils";
 import { useAppDispatch, useAppSelector } from "../../store";
@@ -32,6 +35,8 @@ import {
   updateTodo,
 } from "../../Services/Reducers/Todo.reducer";
 import classNames from "classnames";
+import { UploadChangeParam, UploadFile } from "antd/es/upload";
+import { DevTool } from "@hookform/devtools";
 
 const { Option } = Select;
 
@@ -45,6 +50,7 @@ const TodoList = () => {
   const [sortOrder, setSortOrder] = useState<Order>("ascend");
   const [selectedFilter, setSelectedFilter] = useState<Filter>("all");
   const [editedTodo, setEditedTodo] = useState<TodoType | undefined>(undefined);
+  const [selectedFile, setSelectedFile] = useState<UploadFile<any>>();
   const {
     control,
     handleSubmit,
@@ -53,6 +59,7 @@ const TodoList = () => {
     },
     setError,
     reset,
+    setValue,
   } = useForm<Pick<TodoType, "content" | "deadline" | "note" | "position">>({
     resolver: yupResolver(todoSchema),
   });
@@ -144,10 +151,13 @@ const TodoList = () => {
           ...data,
           isDone: false,
           isWarning,
-          id: new Date().toISOString(),
-          justCreated: true,
+          id: generateUniqueString(),
+          justCreated: false,
+          fileUrl: selectedFile ? selectedFile.thumbUrl : undefined,
+          fileName: selectedFile ? selectedFile.name : undefined,
         })
       );
+      setSelectedFile(undefined);
     }
     setIsModalOpen(false);
     messageApi.open({
@@ -167,6 +177,22 @@ const TodoList = () => {
       setEditedTodo(undefined);
     }
     setIsModalOpen(false);
+  };
+
+  const dummyRequest = ({ file, onSuccess, onError }: any) => {
+    setTimeout(() => {
+      if (file.type.split("/")[0] === "image") {
+        onSuccess("ok");
+      } else {
+        onError({ status: 500 }, "error");
+      }
+    }, 0);
+  };
+
+  const hanldeFileChange = (e: UploadChangeParam<UploadFile<any>>) => {
+    if (!selectedFile && e.file.type?.split("/")[0] === "image") {
+      setSelectedFile(e.file);
+    }
   };
 
   // Handle Date Picker
@@ -361,9 +387,26 @@ const TodoList = () => {
                 >
                   {deadline?.message}
                 </span>
-                {/* <input type="file" name="" id="" onChange={onFileChange} /> */}
               </div>
+              <Upload
+                listType="picture"
+                customRequest={dummyRequest}
+                onChange={hanldeFileChange}
+                maxCount={1}
+                beforeUpload={(file) => {
+                  if (file.type?.split("/")[0] !== "image") {
+                    messageApi.open({
+                      type: "error",
+                      content: "File không đúng định dạng (image/*)",
+                    });
+                  }
+                }}
+                onRemove={() => setSelectedFile(undefined)}
+              >
+                <Button icon={<UploadOutlined />}>Upload Image</Button>
+              </Upload>
             </form>
+            <DevTool control={control} />
           </Modal>
           <Select
             value={sortOrder}
